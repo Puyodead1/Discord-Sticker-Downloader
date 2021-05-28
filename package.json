@@ -1,0 +1,23 @@
+{
+  "name": "discord-sticker-downloader",
+  "version": "1.0.0",
+  "description": "Downloads Discord stickers and converts them to gifs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node ."
+  },
+  "keywords": [
+    "discord",
+    "stickers",
+    "discord-stickers",
+    "discord-lottie"
+  ],
+  "author": "Puyodead1",
+  "license": "MIT",
+  "dependencies": {
+    "apng2gif": "^1.7.0",
+    "node-fetch": "^2.6.1",
+    "puppeteer-lottie": "^1.1.2",
+    "rimraf": "^2.7.1"
+  }
+}
