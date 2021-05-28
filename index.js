@@ -1,18 +1,18 @@
-/* 
+/*
  *  MIT License
- *  
+ *
  *  Copyright (c) 2021 Puyodead1
- *  
+ *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is
  *  furnished to do so, subject to the following conditions:
- *  
+ *
  *  The above copyright notice and this permission notice shall be included in all
  *  copies or substantial portions of the Software.
- *  
+ *
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -20,7 +20,7 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
- *  
+ *
  */
 
 const fetch = require("node-fetch").default;
@@ -31,6 +31,7 @@ const rimraf = require("rimraf");
 const childProcess = require("child_process");
 const renderLottie = require("puppeteer-lottie");
 const apng2gif = require("apng2gif");
+const gifsiclePath = require("gifsicle");
 
 const workingDir = path.join(__dirname, "temp");
 
@@ -108,6 +109,25 @@ function convert(inPath, outPath) {
   });
 }
 
+function resizeGif(inPath, outPath) {
+  return new Promise((resolve, reject) => {
+    const child = childProcess.execFile(gifsiclePath, [
+      "--resize",
+      "143x143",
+      "-i",
+      inPath,
+      "-o",
+      outPath,
+    ]);
+
+    child.on("exit", (code) => {
+      if (code == 0) resolve();
+      else reject(code);
+    });
+    child.on("error", reject);
+  });
+}
+
 /**
  * Downloads a file
  * @param {*} url url
@@ -138,7 +158,8 @@ function rimrafAsync(path) {
 }
 
 (async () => {
-  const stickers = await getStickers().catch(console.error);
+  // const stickers = await getStickers().catch(console.error);
+  const stickers = require("./data.json");
   if (!fs.existsSync(workingDir)) {
     await mkdir(workingDir);
   }
@@ -147,27 +168,45 @@ function rimrafAsync(path) {
     // format type 3 is lotte
     const stickerPack = pack.sticker_pack;
     const packName = stickerPack.name;
-    console.log(`Processing pack: '${packName}'`);
+    console.log(
+      `Processing pack: '${packName}' (${stickers.indexOf(pack)}/${
+        stickers.length
+      })`
+    );
     const packDir = path.join(__dirname, "stickers", packName);
 
-    const stickers = stickerPack.stickers;
-    for (const sticker of stickers) {
+    const packStickers = stickerPack.stickers;
+    for (const sticker of packStickers) {
       const stickerName = sticker.name;
-      console.log(`Processing sticker: '${stickerName}'`);
+      console.log(
+        `Processing sticker: '${stickerName}' (${packStickers.indexOf(
+          sticker
+        )}/${packStickers.length})`
+      );
       const formatType = sticker.format_type;
       const stickerId = sticker.id;
       if (formatType == 2) {
         const packAPNGDir = path.join(packDir, "APNG");
-        const packGIFDir = path.join(packDir, "GIF");
+        const packDir143GIF = path.join(packDir, "GIF-143");
+        const packDirLargeGIF = path.join(packDir, "GIF-Large");
         if (!fs.existsSync(packAPNGDir)) {
           await mkdir(packAPNGDir, { recursive: true });
         }
-        if (!fs.existsSync(packGIFDir)) {
-          await mkdir(packGIFDir, { recursive: true });
+        if (!fs.existsSync(packDir143GIF)) {
+          await mkdir(packDir143GIF, { recursive: true });
+        }
+        if (!fs.existsSync(packDirLargeGIF)) {
+          await mkdir(packDirLargeGIF, { recursive: true });
         }
         const stickerPathAPNG = path.join(packAPNGDir, `${stickerName}.png`);
-        const stickerPathGIFPng = path.join(packGIFDir, `${stickerName}.png`);
-        const stickerPathGIF = path.join(packGIFDir, `${stickerName}.gif`);
+        const stickerPathGIF143 = path.join(
+          packDir143GIF,
+          `${stickerName}.gif`
+        );
+        const stickerPathGIFLarge = path.join(
+          packDirLargeGIF,
+          `${stickerName}.gif`
+        );
         const url = getAPNG(stickerId);
         // apng - native
         if (!fs.existsSync(stickerPathAPNG)) {
@@ -175,13 +214,25 @@ function rimrafAsync(path) {
           await downloadFile(url, stickerPathAPNG).catch(console.error);
         }
         // gif
-        if (!fs.existsSync(stickerPathGIF)) {
-          console.log("  Downloading GIF...");
-          await downloadFile(url, stickerPathGIFPng).catch(console.error);
-          await convert(stickerPathGIFPng, stickerPathGIF);
-          console.log("    Converting...");
-          await unlink(stickerPathGIFPng).catch(console.error);
-          console.log("    Conversion complete");
+        if (!fs.existsSync(stickerPathGIFLarge)) {
+          await convert(stickerPathAPNG, stickerPathGIFLarge);
+          console.log("    Converting large...");
+          console.log("    Conversion of large complete");
+        }
+
+        if (!fs.existsSync(stickerPathGIF143)) {
+          if (fs.existsSync(stickerPathGIFLarge)) {
+            console.log("    Resizing 143...");
+            await resizeGif(stickerPathGIFLarge, stickerPathGIF143).catch(
+              console.error
+            );
+            console.log("    Resizing of 143 complete.");
+          } else {
+            console.error(
+              "    Can't resize GIF to 143 because the large version doesn't exist!"
+            );
+            continue;
+          }
         }
       } else if (formatType == 3) {
         const packDirLottie = path.join(packDir, "Lottie");
@@ -219,13 +270,13 @@ function rimrafAsync(path) {
           height: 143,
           width: 143,
         })
-          .then(() => console.log("finished rendering lottie 143 pngs"))
+          .then(() => console.log("    Render Complete (143)"))
           .catch(console.error);
-        await promiseFromChildProcess(childProcess.exec(ffmpgCmd143))
-          .then(() => console.log("ffmpeg cmd finish"))
-          .catch(console.error);
+        await promiseFromChildProcess(childProcess.exec(ffmpgCmd143)).catch(
+          console.error
+        );
         await rimrafAsync(path.join(workingDir, "*.png"))
-          .then(() => console.log("temp folder cleaned"))
+          .then(() => console.log("    TEMP folder cleaned"))
           .catch(console.error);
 
         const ffmpgCmdLarge = ffmpegCmd(workingPath, stickerPathGifLarge);
@@ -233,13 +284,13 @@ function rimrafAsync(path) {
           path: stickerPathLottie,
           output: workingPath,
         })
-          .then(() => console.log("finished rendering lottie large pngs"))
+          .then(() => console.log("    Render Complete"))
           .catch(console.error);
-        await promiseFromChildProcess(childProcess.exec(ffmpgCmdLarge))
-          .then(() => console.log("ffmpeg cmd finish"))
-          .catch(console.error);
+        await promiseFromChildProcess(childProcess.exec(ffmpgCmdLarge)).catch(
+          console.error
+        );
         await rimrafAsync(path.join(workingDir, "*.png"))
-          .then(() => console.log("temp folder cleaned"))
+          .then(() => console.log("    TEMP folder cleaned"))
           .catch(console.error);
       }
     }

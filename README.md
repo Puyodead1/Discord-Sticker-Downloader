@@ -19,3 +19,8 @@ From Discord's [Sticker FAQ](https://dis.gd/stickersfaq):
 ## Why make this if its a violation of Discord's Copyright?
 
 I don't plan to redistribute any of the content and heck, I probably won't even keep any of it. I just like to make automation programs and utilities to show that something _can_ be done. I also learned a lot about Lottie from this project which is cool.
+
+## Other information
+
+- APNG (type 2) and Lottie (type 3) stickers are downloaded and saved to their respective folders, they are also converted into GIFs and placed in another folder.
+- There are 2 sizes of GIFs, 143x143 which is the native size that Discord displays stickers in chat and 320x320 which is the original size of the sticker files.
