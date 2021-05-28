@@ -8,7 +8,7 @@
 
 ## Copyright
 
-Discord Stickers are copyright, and it is a violation of Discord's copyright to rip stickers. I am not held responsible if you get in trouble from Discord by using this program.
+It is a violation of Discord's copyright to rip stickers. I am not held responsible if you get in trouble from Discord by using this program.
 
 From Discord's [Sticker FAQ](https://dis.gd/stickersfaq):
 
