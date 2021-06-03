@@ -68,10 +68,10 @@ const getLottie = (id) => {
  */
 function getStickers() {
   return new Promise((resolve, reject) => {
-    fetch("https://canary.discord.com/api/v9/users/@me/sticker-packs", {
+    fetch("https://canary.discord.com/api/v9/sticker-packs", {
       headers: {
         accept: "*/*",
-        authorization: "discord token",
+        authorization: process.env.DISCORD_TOKEN,
       },
       method: "GET",
     })
@@ -158,24 +158,21 @@ function rimrafAsync(path) {
 }
 
 (async () => {
-  // const stickers = await getStickers().catch(console.error);
-  const stickers = require("./data.json");
+  const stickerPacks = await getStickers().catch(console.error);
   if (!fs.existsSync(workingDir)) {
     await mkdir(workingDir);
   }
-  for (const pack of stickers) {
+  const packs = stickerPacks.sticker_packs;
+  for (const pack of packs) {
     // format type 2 is apng
     // format type 3 is lotte
-    const stickerPack = pack.sticker_pack;
-    const packName = stickerPack.name;
+    const packName = pack.name;
     console.log(
-      `Processing pack: '${packName}' (${stickers.indexOf(pack)}/${
-        stickers.length
-      })`
+      `Processing pack: '${packName}' (${packs.indexOf(pack)}/${packs.length})`
     );
     const packDir = path.join(__dirname, "stickers", packName);
 
-    const packStickers = stickerPack.stickers;
+    const packStickers = pack.stickers;
     for (const sticker of packStickers) {
       const stickerName = sticker.name;
       console.log(
